@@ -1,0 +1,22 @@
+{
+  "name": "expr",
+  "version": "1.0.0",
+  "description": "tiny util for getting and setting deep object props safely",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theporchrat/expr/"
+  },
+  "keywords": [
+    "expr",
+    "expression",
+    "setter",
+    "getter",
+    "deep"
+  ],
+  "author": "@theporchrat Jason Quense",
+  "license": "MIT"
+}
