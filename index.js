@@ -1,3 +1,13 @@
+/**
+ * @license
+ * expr 1.0.0
+ * Copyright 2014 Jason Quense
+ * Based on Kendo UI Core expression code <https://github.com/telerik/kendo-ui-core#license-information>
+ * Copyright :copyright: 2014 Telerik
+ * Available under MIT license <https://github.com/theporchrat/expr/blob/master/LICENSE.txt>
+ */
+"use strict";
+
 var regexCache = {}
   , setCache = {}
   , getCache = {};
@@ -6,12 +16,13 @@ module.exports = {
   
   expr: expr,
 
-  setter: function(path, safe, param){
-    return setCache[path + "_" + safe + "_" + param] || ( setCache[path] = new Function('data, value', expr(path, safe) + ' = value'))
+  setter: function(path){
+    return setCache[path] || ( setCache[path] = new Function('data, value', expr(path, 'data') + ' = value'))
   },
 
-  getter: function(path, safe, param) {
-    return getCache[path + "_" + safe + "_" + param] || ( getCache[path] = new Function('data', "return " + expr(path, safe) ))
+  getter: function(path, safe) {
+    var k = path + "_" + safe
+    return getCache[k] || ( getCache[k] = new Function('data', "return " + expr(path, safe, 'data') ))
   }
 }
 
@@ -21,7 +32,7 @@ function expr(expression, safe, param){
   expression = expression || ""
   
   if (typeof safe === 'string') {
-    paramName = safe;
+    param = safe;
     safe = false;
   }
 
@@ -34,7 +45,8 @@ function expr(expression, safe, param){
 }
 
 function makeSafe(parts, param) {
-  var result = param, part, idx, isLast;
+  var result = param
+    , part, idx, isLast, isArray, isBracket;
 
   for (idx = 0; idx < parts.length; idx++){
     part   = parts[idx]
