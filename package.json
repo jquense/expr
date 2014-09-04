@@ -1,5 +1,5 @@
 {
-  "name": "expr",
+  "name": "property-expr",
   "version": "1.0.0",
   "description": "tiny util for getting and setting deep object props safely",
   "main": "index.js",
