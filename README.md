@@ -9,8 +9,10 @@ tiny expression helper for creating compiled accessors; handles most stuff, incl
 
     var expr = require('property-expr')
       , obj = {
-          baz: [ "hi", { buz: { baz: 'found me!' } }]
-        };
+        foo: {
+          bar: [ "hi", { buz: { baz: 'found me!' } }]
+        }
+      };
 
     var getBaz = expr.getter('foo.bar[1]["buz"].baz')
       , setBaz = expr.setter('foo.bar[1]["buz"].baz')

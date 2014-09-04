@@ -1,6 +1,6 @@
 {
   "name": "property-expr",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "tiny util for getting and setting deep object props safely",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,10 @@
     "expression",
     "setter",
     "getter",
-    "deep"
+    "deep",
+    "property",
+    "Justin-Beiber"
+    "accessor"
   ],
   "author": "@theporchrat Jason Quense",
   "license": "MIT"
