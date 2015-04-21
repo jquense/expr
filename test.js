@@ -2,7 +2,6 @@ var a = require('assert')
   , expression = require('./index.js')
   , getter = expression.getter
   , setter = expression.setter
-  , expr   = expression.expr 
   , obj = {}
 
 obj = { foo: { bar: ['baz', 'bux'], fux: 5 }}
@@ -34,7 +33,45 @@ a.strictEqual(obj.foo.fux, 10)
 setter('foo.bar[1]')(obj, 'bot')
 a.strictEqual(obj.foo.bar[1], 'bot')
 
-setter('["foo"]["bar"][1]')(obj, 'baz')
+setter('[\'foo\']["bar"][1]')(obj, 'baz')
 a.strictEqual(obj.foo.bar[1], 'baz')
 
+// -- Split -------
+
+var parts = expression.split('foo.baz["bar"][1]')
+
+ a.strictEqual(parts.length, 4)
+ 
+// -- ForEach ------
+
+var count = 0;
+
+expression.forEach('foo.baz["bar"][1]', function(part, isBracket, isArray, idx) {
+  count = idx;
+
+  switch (idx){
+    case 0:
+      a.strictEqual(part, 'foo')
+      a.strictEqual(isBracket, false)
+      a.strictEqual(isArray, false)
+      break;
+    case 1:
+      a.strictEqual(part, 'baz')
+      a.strictEqual(isBracket, false)
+      a.strictEqual(isArray, false)
+      break;
+    case 2:
+      a.strictEqual(part, '"bar"')
+      a.strictEqual(isBracket, true)
+      a.strictEqual(isArray, false)
+      break;
+    case 3:
+      a.strictEqual(part, '1')
+      a.strictEqual(isBracket, false)
+      a.strictEqual(isArray, true)
+      break;
+  }
+})
+
+a.strictEqual(count, 3)
 console.log('--- Tests Passed ---')
