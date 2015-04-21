@@ -8,6 +8,7 @@
  */
 'use strict';
 var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g
+  , DIGIT_REGEX = /^\d+$/;
 
 var setCache = {}
   , getCache = {};
@@ -27,6 +28,14 @@ module.exports = {
 
   split: function(path){
     return path.match(SPLIT_REGEX)
+  },
+
+  join: function(segments){
+    return segments.reduce(function(path, part){
+       return path + (isQuoted(part) || DIGIT_REGEX.test(part) 
+        ? '['+ part + ']' 
+        : (path ? '.' : '') + part)
+    }, '')
   },
 
   forEach: function(path, cb, thisArg) {
@@ -59,12 +68,16 @@ function forEach(parts, iter, thisArg){
     part = parts[idx]
 
     if( part ) {
-      isBracket = ["'", '"'].indexOf(part.charAt(0)) !== -1
-      isArray   = /^\d+$/.test(part)
+      isBracket = isQuoted(part)
+      isArray   = !isBracket && /^\d+$/.test(part)
 
       iter.call(thisArg, part, isBracket, isArray, idx, parts)
     }
   }
+}
+
+function isQuoted(str){
+  return typeof str === 'string' && str && ["'", '"'].indexOf(str.charAt(0)) !== -1
 }
 
 function makeSafe(path, param) {

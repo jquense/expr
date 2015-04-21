@@ -42,6 +42,15 @@ var parts = expression.split('foo.baz["bar"][1]')
 
  a.strictEqual(parts.length, 4)
  
+
+ // -- JOIN -------
+
+var parts = expression.split('foo.baz["bar"][1]')
+
+a.strictEqual(expression.join(['0', 'baz', '"bar"', 1]), '[0].baz["bar"][1]')
+
+a.strictEqual(expression.join(parts), 'foo.baz["bar"][1]')
+
 // -- ForEach ------
 
 var count = 0;
