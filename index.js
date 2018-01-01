@@ -9,6 +9,7 @@
 'use strict';
 var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   DIGIT_REGEX = /^\d+$/,
+  LEAD_DIGIT_REGEX = /^\d/,
   SPEC_CHAR_REGEX = /[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g;
 
 var setCache = {},
@@ -116,7 +117,7 @@ function makeSafe(path, param) {
 }
 
 function hasLeadingNumber(part) {
-  return !isNaN(parseInt(part.charAt(0), 10)) && isNaN(part);
+  return part.match(LEAD_DIGIT_REGEX) && !part.match(DIGIT_REGEX);
 }
 
 function hasSpecialChars(part) {
