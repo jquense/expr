@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/theporchrat/expr/"
+    "url": "https://github.com/jquense/expr/"
   },
   "keywords": [
     "expr",
@@ -21,9 +21,10 @@
     "Justin-Beiber",
     "accessor"
   ],
-  "author": "@theporchrat Jason Quense",
+  "author": "@monasticpanic Jason Quense",
   "license": "MIT",
   "prettier": {
-    "singleQuote": true
+    "singleQuote": true,
+    "semi": false
   }
 }
