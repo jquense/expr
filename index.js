@@ -1,10 +1,5 @@
 /**
- * @license
- * expr 1.0.0
- * Copyright 2014 Jason Quense
  * Based on Kendo UI Core expression code <https://github.com/telerik/kendo-ui-core#license-information>
- * Copyright :copyright: 2014 Telerik
- * Available under MIT license <https://github.com/theporchrat/expr/blob/master/LICENSE.txt>
  */
 'use strict'
 var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
