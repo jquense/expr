@@ -5,35 +5,30 @@
 var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   DIGIT_REGEX = /^\d+$/,
   LEAD_DIGIT_REGEX = /^\d/,
-  SPEC_CHAR_REGEX = /[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g
+  SPEC_CHAR_REGEX = /[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g,
+  CLEAN_QUOTES_REGEX = /^\s*(['"]?)(.*?)(\1)\s*$/,
+  MAX_CACHE_SIZE = 512
 
-var setCache = {},
+var contentSecurityPolicy = false,
+  pathCacheSize = 0,
+  pathCache = {},
+  setCache = {},
   getCache = {}
+
+try {
+  new Function('')
+} catch (error) {
+  contentSecurityPolicy = true
+}
 
 module.exports = {
   expr: expr,
 
-  setter: function(path) {
-    return (
-      setCache[path] ||
-      (setCache[path] = new Function(
-        'data, value',
-        expr(path, 'data') + ' = value'
-      ))
-    )
-  },
+  setter: contentSecurityPolicy ? setterFallbackMemoized : setterEval,
 
-  getter: function(path, safe) {
-    var k = path + '_' + safe
-    return (
-      getCache[k] ||
-      (getCache[k] = new Function('data', 'return ' + expr(path, safe, 'data')))
-    )
-  },
+  getter: contentSecurityPolicy ? getterFallbackMemoized : getterEval,
 
-  split: function(path) {
-    return path.match(SPLIT_REGEX)
-  },
+  split: split,
 
   join: function(segments) {
     return segments.reduce(function(path, part) {
@@ -47,8 +42,83 @@ module.exports = {
   },
 
   forEach: function(path, cb, thisArg) {
-    forEach(path.match(SPLIT_REGEX), cb, thisArg)
+    forEach(split(path), cb, thisArg)
   }
+}
+
+function setterEval(path) {
+  return (
+    setCache[path] ||
+    (setCache[path] = new Function(
+      'data, value',
+      expr(path, 'data') + ' = value'
+    ))
+  )
+}
+
+function setterFallbackMemoized(path) {
+  var parts = normalizePath(path)
+  return function(data, value) {
+    return setterFallback(parts, data, value)
+  }
+}
+
+function setterFallback(parts, data, value) {
+  var index = 0,
+    len = parts.length
+  while (index < len - 1) {
+    data = data[parts[index++]]
+  }
+  data[parts[index]] = value
+}
+
+function getterEval(path, safe) {
+  var k = path + '_' + safe
+  return (
+    getCache[k] ||
+    (getCache[k] = new Function('data', 'return ' + expr(path, safe, 'data')))
+  )
+}
+
+function getterFallbackMemoized(path, safe) {
+  var parts = normalizePath(path)
+  return function(data) {
+    return getterFallback(parts, safe, data)
+  }
+}
+
+function getterFallback(parts, safe, data) {
+  var index = 0,
+    len = parts.length
+  while (index < len) {
+    if (data || !safe) {
+      data = data[parts[index++]]
+    } else {
+      return
+    }
+  }
+  return data
+}
+
+function normalizePath(path) {
+  var parts = pathCache[path]
+  if (parts) {
+    return parts
+  }
+  if (pathCacheSize >= MAX_CACHE_SIZE) {
+    pathCache = {}
+    pathCacheSize = 1
+  } else {
+    pathCacheSize++
+  }
+  parts = pathCache[path] = split(path).map(function(part) {
+    return part.replace(CLEAN_QUOTES_REGEX, '$2')
+  })
+  return parts
+}
+
+function split(path) {
+  return path.match(SPLIT_REGEX)
 }
 
 function expr(expression, safe, param) {
@@ -97,7 +167,7 @@ function isQuoted(str) {
 
 function makeSafe(path, param) {
   var result = param,
-    parts = path.match(SPLIT_REGEX),
+    parts = split(path),
     isLast
 
   forEach(parts, function(part, isBracket, isArray, idx, parts) {
