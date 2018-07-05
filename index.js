@@ -2,6 +2,26 @@
  * Based on Kendo UI Core expression code <https://github.com/telerik/kendo-ui-core#license-information>
  */
 'use strict'
+
+function Cache(maxSize) {
+  this._maxSize = maxSize
+  this.clear()
+}
+Cache.prototype.clear = function() {
+  this._size = 0
+  this._values = {}
+}
+Cache.prototype.get = function(key) {
+  return this._values[key]
+}
+Cache.prototype.set = function(key, value) {
+  this._size >= this._maxSize && this.clear()
+  if (!this._values.hasOwnProperty(key)) {
+    this._size++
+  }
+  return this._values[key] = value
+}
+
 var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   DIGIT_REGEX = /^\d+$/,
   LEAD_DIGIT_REGEX = /^\d/,
@@ -10,10 +30,9 @@ var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   MAX_CACHE_SIZE = 512
 
 var contentSecurityPolicy = false,
-  pathCacheSize = 0,
-  pathCache = {},
-  setCache = {},
-  getCache = {}
+  pathCache = new Cache(MAX_CACHE_SIZE),
+  setCache = new Cache(MAX_CACHE_SIZE),
+  getCache = new Cache(MAX_CACHE_SIZE)
 
 try {
   new Function('')
@@ -22,13 +41,45 @@ try {
 }
 
 module.exports = {
+  Cache: Cache,
+
   expr: expr,
 
-  setter: contentSecurityPolicy ? setterFallbackMemoized : setterEval,
-
-  getter: contentSecurityPolicy ? getterFallbackMemoized : getterEval,
-
   split: split,
+
+  normalizePath: normalizePath,
+
+  setter: contentSecurityPolicy
+    ? function(path) {
+      var parts = normalizePath(path)
+      return function(data, value) {
+        return setterFallback(parts, data, value)
+      }
+    }
+    : function(path) {
+      return setCache.get(path) || setCache.set(
+        path,
+        new Function(
+          'data, value',
+          expr(path, 'data') + ' = value'
+        )
+      )
+    },
+
+  getter: contentSecurityPolicy
+    ? function(path, safe) {
+      var parts = normalizePath(path)
+      return function(data) {
+        return getterFallback(parts, safe, data)
+      }
+    }
+    : function(path, safe) {
+      var key = path + '_' + safe
+      return getCache.get(key) || getCache.set(
+        key,
+        new Function('data', 'return ' + expr(path, safe, 'data'))
+      )
+    },
 
   join: function(segments) {
     return segments.reduce(function(path, part) {
@@ -46,23 +97,6 @@ module.exports = {
   }
 }
 
-function setterEval(path) {
-  return (
-    setCache[path] ||
-    (setCache[path] = new Function(
-      'data, value',
-      expr(path, 'data') + ' = value'
-    ))
-  )
-}
-
-function setterFallbackMemoized(path) {
-  var parts = normalizePath(path)
-  return function(data, value) {
-    return setterFallback(parts, data, value)
-  }
-}
-
 function setterFallback(parts, data, value) {
   var index = 0,
     len = parts.length
@@ -72,26 +106,11 @@ function setterFallback(parts, data, value) {
   data[parts[index]] = value
 }
 
-function getterEval(path, safe) {
-  var k = path + '_' + safe
-  return (
-    getCache[k] ||
-    (getCache[k] = new Function('data', 'return ' + expr(path, safe, 'data')))
-  )
-}
-
-function getterFallbackMemoized(path, safe) {
-  var parts = normalizePath(path)
-  return function(data) {
-    return getterFallback(parts, safe, data)
-  }
-}
-
 function getterFallback(parts, safe, data) {
   var index = 0,
     len = parts.length
   while (index < len) {
-    if (data || !safe) {
+    if (data == null || !safe) {
       data = data[parts[index++]]
     } else {
       return
@@ -101,20 +120,12 @@ function getterFallback(parts, safe, data) {
 }
 
 function normalizePath(path) {
-  var parts = pathCache[path]
-  if (parts) {
-    return parts
-  }
-  if (pathCacheSize >= MAX_CACHE_SIZE) {
-    pathCache = {}
-    pathCacheSize = 1
-  } else {
-    pathCacheSize++
-  }
-  parts = pathCache[path] = split(path).map(function(part) {
-    return part.replace(CLEAN_QUOTES_REGEX, '$2')
-  })
-  return parts
+  return pathCache.get(path) || pathCache.set(
+    path,
+    split(path).map(function(part) {
+      return part.replace(CLEAN_QUOTES_REGEX, '$2')
+    })
+  )
 }
 
 function split(path) {
