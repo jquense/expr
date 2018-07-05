@@ -25,14 +25,14 @@ Setters and getters are compiled to functions and cached for Performance™
 
 ### `getter(expression, [ safeAccess ])`
 
-returns a function that accepts an obj and returns the value at the supplied expression. You can create a "safe" getter, which won't error out when accessing properties that don't exist, reducing existance checks befroe property access:
+Returns a function that accepts an obj and returns the value at the supplied expression. You can create a "safe" getter, which won't error out when accessing properties that don't exist, reducing existance checks befroe property access:
 
     expr.getter('foo.bar.baz', true)({ foo: {} }) // => undefined
     //instead of val = foo.bar && foo.bar.baz
 
 ### `setter(expression)`
 
-returns a function that accepts an obj and a value and sets the property pointed to by the expression to the supplied value.
+Returns a function that accepts an obj and a value and sets the property pointed to by the expression to the supplied value.
 
 
 ### `expr(expression, [ safeAccess], [ paramName = 'data'])`
@@ -47,17 +47,39 @@ Returns a normalized expression string pointing to a property on root object
 Returns an array of each path segment.
 
 ```js
- split("foo['bar'][0].baz") // [ "foo", "'bar'", "0", "baz"]
+expr.split("foo['bar'][0].baz") // [ "foo", "'bar'", "0", "baz"]
 ```
 
-### `forEach(path, iterator[, thisArg]) `
+### `forEach(path, iterator[, thisArg])`
 
 Iterate through a path but segment, with some additional helpful metadata about the segment. The iterator function is called with: `pathSegment`, `isBracket`, `isArray`, `idx`, `segments`
 
 ```js
-.forEach('foo["bar"][1]', function(pathSegment, isBracket, isArray, idx, segments) {
+expr.forEach('foo["bar"][1]', function(pathSegment, isBracket, isArray, idx, segments) {
   // 'foo'   -> isBracket = false, isArray = false, idx = 0
   // '"bar"' -> isBracket = true,  isArray = false, idx = 1
   // '0'     -> isBracket = false, isArray = true,  idx = 2
-}
+})
+```
+
+### `normalizePath(path)`
+
+Returns an array of path segments without quotes and spaces.
+```js
+expr.normalizePath('foo["bar"][ "1" ][2][ " sss " ]')
+// ['foo', 'bar', '1', '2', ' sss ']
+```
+
+### `new Cache(maxSize)`
+
+Just an utility class, returns an instance of cache. When the max size is exceeded, cache clears its storage.
+```js
+var cache = new Cache(2)
+cache.set('a', 123) // returns 123
+cache.get('a') // returns 123
+cache.clear()
+
+cache.set('a', 1)
+cache.set('b', 2) // cache contains 2 values
+cache.set('c', 3) // cache was cleaned automatically and contains 1 value
 ```
