@@ -110,7 +110,7 @@ function getterFallback(parts, safe, data) {
   var index = 0,
     len = parts.length
   while (index < len) {
-    if (data == null || !safe) {
+    if (data != null || !safe) {
       data = data[parts[index++]]
     } else {
       return
