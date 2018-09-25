@@ -7,6 +7,8 @@ var a = require('assert'),
 obj = {
   foo: {
     bar: ['baz', 'bux'],
+    list: [{ id: 1 }, { id: 2 }],
+    listOfLists: [{ items: [{ id: 1 }, { id: 2 }] }, { items: [{ id: 3}, { id: 4 }] }],
     fux: 5,
     '00N40000002S5U0': 1,
     N40000002S5U0: 2,
@@ -19,6 +21,8 @@ a.strictEqual(getter('foo.fux')(obj), 5);
 a.deepEqual(getter('foo.bar')(obj), ['baz', 'bux']);
 
 a.strictEqual(getter('foo.bar[1]')(obj), 'bux');
+a.deepEqual(getter('foo.list[].id')(obj), [1, 2]);
+a.deepEqual(getter('foo.listOfLists[].items[].id')(obj), [1, 2, 3, 4]);
 a.strictEqual(getter('["foo"]["bar"][1]')(obj), 'bux');
 a.strictEqual(getter('[1]')([1, 'bux']), 'bux');
 

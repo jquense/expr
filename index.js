@@ -40,6 +40,21 @@ try {
   contentSecurityPolicy = true
 }
 
+var getter = contentSecurityPolicy
+  ? function(path, safe) {
+    var parts = normalizePath(path)
+    return function (data) {
+      return getterFallback(parts, safe, data)
+    }
+  }
+  : function(path, safe) {
+    var key = path + '_' + safe
+    return getCache.get(key) || getCache.set(
+      key,
+      new Function('data', 'return ' + expr(path, safe, 'data'))
+    )
+  }
+
 module.exports = {
   Cache: Cache,
 
@@ -66,20 +81,20 @@ module.exports = {
       )
     },
 
-  getter: contentSecurityPolicy
-    ? function(path, safe) {
-      var parts = normalizePath(path)
-      return function(data) {
-        return getterFallback(parts, safe, data)
+  getter: function(path, safe) {
+    var chunks = path.split('[]').map(function(chunk, idx) {
+      return getter(idx === 0 ? chunk : chunk.slice(1), safe)
+    })
+    return function(obj) {
+      var res = chunks[0](obj)
+      var idx = 1
+      while (chunks[idx] && Array.isArray(res)) {
+        res = Array.prototype.concat.apply([], res.map(chunks[idx]))
+        idx += 1
       }
+      return res
     }
-    : function(path, safe) {
-      var key = path + '_' + safe
-      return getCache.get(key) || getCache.set(
-        key,
-        new Function('data', 'return ' + expr(path, safe, 'data'))
-      )
-    },
+  },
 
   join: function(segments) {
     return segments.reduce(function(path, part) {
