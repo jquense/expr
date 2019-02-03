@@ -15,6 +15,7 @@ obj = {
 };
 
 // -- Getters --
+a.strictEqual(getter('')(obj), obj);
 a.strictEqual(getter('foo.fux')(obj), 5);
 a.deepEqual(getter('foo.bar')(obj), ['baz', 'bux']);
 
@@ -23,6 +24,7 @@ a.strictEqual(getter('["foo"]["bar"][1]')(obj), 'bux');
 a.strictEqual(getter('[1]')([1, 'bux']), 'bux');
 
 // safe access
+a.strictEqual(getter('', true)(obj), obj);
 a.strictEqual(getter('foo.fux', true)(obj), 5);
 a.deepEqual(getter('foo.bar', true)(obj), ['baz', 'bux']);
 
@@ -75,6 +77,8 @@ var parts = expression.split('foo.baz["bar"][1]');
 
 a.strictEqual(parts.length, 4);
 
+a.deepEqual(expression.split(''), []);
+
 // -- join --
 
 var parts = expression.split('foo.baz["bar"][1]');
@@ -82,6 +86,8 @@ var parts = expression.split('foo.baz["bar"][1]');
 a.strictEqual(expression.join(['0', 'baz', '"bar"', 1]), '[0].baz["bar"][1]');
 
 a.strictEqual(expression.join(parts), 'foo.baz["bar"][1]');
+
+a.strictEqual(expression.join([]), '');
 
 // -- forEach --
 
