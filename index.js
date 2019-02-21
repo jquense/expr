@@ -29,16 +29,19 @@ var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   CLEAN_QUOTES_REGEX = /^\s*(['"]?)(.*?)(\1)\s*$/,
   MAX_CACHE_SIZE = 512
 
-var contentSecurityPolicy = false,
+var contentSecurityPolicyEnabled = true,
   pathCache = new Cache(MAX_CACHE_SIZE),
   setCache = new Cache(MAX_CACHE_SIZE),
   getCache = new Cache(MAX_CACHE_SIZE)
 
-try {
-  new Function('')
-} catch (error) {
-  contentSecurityPolicy = true
-}
+if (process.env.NODE_ENV !== 'production' || process.env.CSP_DISABLED) {
+  try {
+    new Function('')
+    contentSecurityPolicyEnabled = false;
+  } catch (error) {
+    contentSecurityPolicyEnabled = true;
+  }
+} 
 
 module.exports = {
   Cache: Cache,
@@ -49,7 +52,7 @@ module.exports = {
 
   normalizePath: normalizePath,
 
-  setter: contentSecurityPolicy
+  setter: contentSecurityPolicyEnabled
     ? function(path) {
       var parts = normalizePath(path)
       return function(data, value) {
@@ -66,7 +69,7 @@ module.exports = {
       )
     },
 
-  getter: contentSecurityPolicy
+  getter: contentSecurityPolicyEnabled
     ? function(path, safe) {
       var parts = normalizePath(path)
       return function(data) {
