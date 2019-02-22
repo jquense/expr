@@ -29,19 +29,9 @@ var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   CLEAN_QUOTES_REGEX = /^\s*(['"]?)(.*?)(\1)\s*$/,
   MAX_CACHE_SIZE = 512
 
-var contentSecurityPolicyEnabled = true,
-  pathCache = new Cache(MAX_CACHE_SIZE),
+var pathCache = new Cache(MAX_CACHE_SIZE),
   setCache = new Cache(MAX_CACHE_SIZE),
   getCache = new Cache(MAX_CACHE_SIZE)
-
-if (process.env.NODE_ENV !== 'production' || process.env.CSP_DISABLED) {
-  try {
-    new Function('')
-    contentSecurityPolicyEnabled = false;
-  } catch (error) {
-    contentSecurityPolicyEnabled = true;
-  }
-} 
 
 module.exports = {
   Cache: Cache,
@@ -52,14 +42,23 @@ module.exports = {
 
   normalizePath: normalizePath,
 
-  setter: contentSecurityPolicyEnabled
-    ? function(path) {
-      var parts = normalizePath(path)
-      return function(data, value) {
-        return setterFallback(parts, data, value)
-      }
+  // CSP-safe solution
+  setter: function(path) {
+    var parts = normalizePath(path)
+    return function(data, value) {
+      return setterFallback(parts, data, value)
     }
-    : function(path) {
+  },
+
+  getter: function(path, safe) {
+    var parts = normalizePath(path)
+    return function(data) {
+      return getterFallback(parts, safe, data)
+    }
+  },
+
+  // more performant solution, safe to use when CSP is disabled
+  setterCSPDisabled: function(path) {
       return setCache.get(path) || setCache.set(
         path,
         new Function(
@@ -68,15 +67,8 @@ module.exports = {
         )
       )
     },
-
-  getter: contentSecurityPolicyEnabled
-    ? function(path, safe) {
-      var parts = normalizePath(path)
-      return function(data) {
-        return getterFallback(parts, safe, data)
-      }
-    }
-    : function(path, safe) {
+  
+  getterCSPDisabled: function(path, safe) {
       var key = path + '_' + safe
       return getCache.get(key) || getCache.set(
         key,
