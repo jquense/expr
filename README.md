@@ -83,3 +83,25 @@ cache.set('a', 1)
 cache.set('b', 2) // cache contains 2 values
 cache.set('c', 3) // cache was cleaned automatically and contains 1 value
 ```
+
+
+### CSP 
+
+The default implementation of this package depends on `new Function`. If your Content Security Policy prevents the use 
+`eval`, a (slower) fallback implementation will be used instead. 
+
+This library will try to evaluate a test `new Function` 
+statement in a `try`/`catch` block. If it succeeds, `eval` is allowed a the faster implementation will be used. If it 
+fails the slower fallback implementation will be used.
+
+If you have a CSP policy which blocks `eval` in place this test will send a violation event to your `report-uri` on 
+every page load. You can prevent this check from being executed and force the fallback implementation by means of the 
+following configuration code: 
+
+```
+setConfig({
+  contentSecurityPolicy: true
+})
+```
+
+Make sure you execute this configuration before any other Yup/Expr related code.  

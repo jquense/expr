@@ -29,16 +29,12 @@ var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
   CLEAN_QUOTES_REGEX = /^\s*(['"]?)(.*?)(\1)\s*$/,
   MAX_CACHE_SIZE = 512
 
-var contentSecurityPolicy = false,
-  pathCache = new Cache(MAX_CACHE_SIZE),
+var pathCache = new Cache(MAX_CACHE_SIZE),
   setCache = new Cache(MAX_CACHE_SIZE),
   getCache = new Cache(MAX_CACHE_SIZE)
 
-try {
-  new Function('')
-} catch (error) {
-  contentSecurityPolicy = true
-}
+
+var config
 
 module.exports = {
   Cache: Cache,
@@ -49,14 +45,15 @@ module.exports = {
 
   normalizePath: normalizePath,
 
-  setter: contentSecurityPolicy
-    ? function(path) {
+  setConfig: setConfig,
+
+  setter: function(path) {
+    if (getConfig().contentSecurityPolicy) {
       var parts = normalizePath(path)
       return function(data, value) {
         return setterFallback(parts, data, value)
       }
-    }
-    : function(path) {
+    } else {
       return setCache.get(path) || setCache.set(
         path,
         new Function(
@@ -64,22 +61,23 @@ module.exports = {
           expr(path, 'data') + ' = value'
         )
       )
-    },
+    }
+  },
 
-  getter: contentSecurityPolicy
-    ? function(path, safe) {
+  getter: function(path, safe) {
+    if (getConfig().contentSecurityPolicy) {
       var parts = normalizePath(path)
       return function(data) {
         return getterFallback(parts, safe, data)
       }
-    }
-    : function(path, safe) {
+    } else {
       var key = path + '_' + safe
       return getCache.get(key) || getCache.set(
         key,
         new Function('data', 'return ' + expr(path, safe, 'data'))
       )
-    },
+    }
+  },
 
   join: function(segments) {
     return segments.reduce(function(path, part) {
@@ -202,4 +200,26 @@ function hasSpecialChars(part) {
 
 function shouldBeQuoted(part) {
   return !isQuoted(part) && (hasLeadingNumber(part) || hasSpecialChars(part))
+}
+
+function setConfig(c) {
+  config = c
+}
+
+function getConfig() {
+  if (!config) {
+    try {
+      new Function('')
+
+      config = {
+        contentSecurityPolicy: false
+      }
+    } catch (error) {
+      config = {
+        contentSecurityPolicy: true
+      }
+    }
+  }
+
+  return config
 }
