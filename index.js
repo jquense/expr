@@ -85,7 +85,7 @@ module.exports = {
   },
 
   forEach: function(path, cb, thisArg) {
-    forEach(split(path), cb, thisArg)
+    forEach(Array.isArray(path) ? path : split(path), cb, thisArg)
   }
 }
 

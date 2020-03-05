@@ -16,7 +16,7 @@ interface Expr {
   getter(path: string): (data: any) => any
   join(segments: string[]): string
   forEach(
-    path: string,
+    path: string | string[],
     callback: (
       part: string,
       isBracket: boolean,
