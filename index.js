@@ -9,17 +9,16 @@ function Cache(maxSize) {
 }
 Cache.prototype.clear = function() {
   this._size = 0
-  this._values = {}
+  this._values = Object.create(null)
 }
 Cache.prototype.get = function(key) {
   return this._values[key]
 }
 Cache.prototype.set = function(key, value) {
   this._size >= this._maxSize && this.clear()
-  if (!this._values.hasOwnProperty(key)) {
-    this._size++
-  }
-  return this._values[key] = value
+  if (!(key in this._values)) this._size++
+
+  return (this._values[key] = value)
 }
 
 var SPLIT_REGEX = /[^.^\]^[]+|(?=\[\]|\.\.)/g,
@@ -33,50 +32,45 @@ var pathCache = new Cache(MAX_CACHE_SIZE),
   setCache = new Cache(MAX_CACHE_SIZE),
   getCache = new Cache(MAX_CACHE_SIZE)
 
-
 var config
 
 module.exports = {
   Cache: Cache,
 
-  expr: expr,
-
   split: split,
 
   normalizePath: normalizePath,
 
-  setConfig: setConfig,
-
   setter: function(path) {
-    if (getConfig().contentSecurityPolicy) {
-      var parts = normalizePath(path)
-      return function(data, value) {
-        return setterFallback(parts, data, value)
-      }
-    } else {
-      return setCache.get(path) || setCache.set(
-        path,
-        new Function(
-          'data, value',
-          expr(path, 'data') + ' = value'
-        )
-      )
-    }
+    var parts = normalizePath(path)
+
+    return (
+      setCache.get(path) ||
+      setCache.set(path, function setter(data, value) {
+        var index = 0,
+          len = parts.length
+        while (index < len - 1) {
+          data = data[parts[index++]]
+        }
+        data[parts[index]] = value
+      })
+    )
   },
 
   getter: function(path, safe) {
-    if (getConfig().contentSecurityPolicy) {
-      var parts = normalizePath(path)
-      return function(data) {
-        return getterFallback(parts, safe, data)
-      }
-    } else {
-      var key = path + '_' + safe
-      return getCache.get(key) || getCache.set(
-        key,
-        new Function('data', 'return ' + expr(path, safe, 'data'))
-      )
-    }
+    var parts = normalizePath(path)
+    return (
+      getCache.get(path) ||
+      getCache.set(path, function getter(data) {
+        var index = 0,
+          len = parts.length
+        while (index < len) {
+          if (data != null || !safe) data = data[parts[index++]]
+          else return
+        }
+        return data
+      })
+    )
   },
 
   join: function(segments) {
@@ -95,54 +89,20 @@ module.exports = {
   }
 }
 
-function setterFallback(parts, data, value) {
-  var index = 0,
-    len = parts.length
-  while (index < len - 1) {
-    data = data[parts[index++]]
-  }
-  data[parts[index]] = value
-}
-
-function getterFallback(parts, safe, data) {
-  var index = 0,
-    len = parts.length
-  while (index < len) {
-    if (data != null || !safe) {
-      data = data[parts[index++]]
-    } else {
-      return
-    }
-  }
-  return data
-}
-
 function normalizePath(path) {
-  return pathCache.get(path) || pathCache.set(
-    path,
-    split(path).map(function(part) {
-      return part.replace(CLEAN_QUOTES_REGEX, '$2')
-    })
+  return (
+    pathCache.get(path) ||
+    pathCache.set(
+      path,
+      split(path).map(function(part) {
+        return part.replace(CLEAN_QUOTES_REGEX, '$2')
+      })
+    )
   )
 }
 
 function split(path) {
   return path.match(SPLIT_REGEX)
-}
-
-function expr(expression, safe, param) {
-  expression = expression || ''
-
-  if (typeof safe === 'string') {
-    param = safe
-    safe = false
-  }
-
-  param = param || 'data'
-
-  if (expression && expression.charAt(0) !== '[') expression = '.' + expression
-
-  return safe ? makeSafe(expression, param) : param + expression
 }
 
 function forEach(parts, iter, thisArg) {
@@ -174,22 +134,6 @@ function isQuoted(str) {
   )
 }
 
-function makeSafe(path, param) {
-  var result = param,
-    parts = split(path),
-    isLast
-
-  forEach(parts, function(part, isBracket, isArray, idx, parts) {
-    isLast = idx === parts.length - 1
-
-    part = isBracket || isArray ? '[' + part + ']' : '.' + part
-
-    result += part + (!isLast ? ' || {})' : ')')
-  })
-
-  return new Array(parts.length + 1).join('(') + result
-}
-
 function hasLeadingNumber(part) {
   return part.match(LEAD_DIGIT_REGEX) && !part.match(DIGIT_REGEX)
 }
@@ -200,26 +144,4 @@ function hasSpecialChars(part) {
 
 function shouldBeQuoted(part) {
   return !isQuoted(part) && (hasLeadingNumber(part) || hasSpecialChars(part))
-}
-
-function setConfig(c) {
-  config = c
-}
-
-function getConfig() {
-  if (!config) {
-    try {
-      new Function('')
-
-      config = {
-        contentSecurityPolicy: false
-      }
-    } catch (error) {
-      config = {
-        contentSecurityPolicy: true
-      }
-    }
-  }
-
-  return config
 }

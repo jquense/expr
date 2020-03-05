@@ -3,6 +3,11 @@
   "version": "1.5.1",
   "description": "tiny util for getting and setting deep object props safely",
   "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
   "scripts": {
     "test": "node ./test.js",
     "debug": "node --inspect-brk ./test.js"
