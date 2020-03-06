@@ -13,7 +13,7 @@ export interface Expr {
 
   split(path: string): string[]
   setter(path: string): (data: any, value: any) => any
-  getter(path: string): (data: any) => any
+  getter(path: string, safe?: boolean): (data: any) => any
   join(segments: string[]): string
   forEach(
     path: string | string[],
