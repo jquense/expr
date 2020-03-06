@@ -1,10 +1,10 @@
-interface Cache {
+export interface Cache {
   set(key: string, value: any): value
   get(key: string): any
   clear(): void
 }
 
-interface Expr {
+export interface Expr {
   setConfig(config: { contentSecurityPolicy: boolean }): void
 
   Cache: {
@@ -27,4 +27,5 @@ interface Expr {
   ): void
 }
 
-export = Expr
+declare const expr: Expr
+export = expr
