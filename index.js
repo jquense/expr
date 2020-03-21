@@ -41,17 +41,21 @@ module.exports = {
 
   normalizePath: normalizePath,
 
-  setter: function(path) {
+  setter: function(path, options) {
     var parts = normalizePath(path)
-
+    let { create = false, array = true } = options || {};
+    let cacheKey = path+''+create+''+array;
     return (
-      setCache.get(path) ||
-      setCache.set(path, function setter(data, value) {
+      setCache.get(cacheKey) ||
+      setCache.set(cacheKey, function setter(data, value) {
         var index = 0,
-          len = parts.length
+          len = parts.length;
         while (index < len - 1) {
-          data = data[parts[index++]]
+          var next = data[parts[index]];
+          if(!next && create) data[parts[index]] = parts[index+1].match(DIGIT_REGEX) && array ? [] : {};
+          data = data[parts[index++]];
         }
+
         data[parts[index]] = value
       })
     )

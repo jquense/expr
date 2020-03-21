@@ -2,7 +2,7 @@ const a = require('assert')
 const expr = require('./index')
 const compiler = require('./compiler')
 
-function runSetterGetterTests({ setter, getter }) {
+function runSetterGetterTests({ setter, getter }, skipCreate) {
   let obj = {
     foo: {
       bar: ['baz', 'bux'],
@@ -48,6 +48,23 @@ function runSetterGetterTests({ setter, getter }) {
 
   setter('[\'foo\']["bar"][1]')(obj, 'baz')
   a.strictEqual(obj.foo.bar[1], 'baz')
+
+  // -- Create Setters --
+  if(!skipCreate) {
+    a.throws(() => setter('bar.foo')(obj,10));
+    setter('bar.foo',{create:true})(obj,10);
+    a.strictEqual(obj.bar.foo,10);
+    
+    setter('bar.quz[2]',{create:true,array:false})(obj,'baz');
+    a.ok(!Array.isArray(obj.bar.quz));
+    a.strictEqual(obj.bar.quz['2'],'baz');
+  
+    setter('bar.qux[2]',{create:true})(obj,'baz');
+    a.ok(Array.isArray(obj.bar.qux));
+    a.ok(obj.bar.qux.length === 3);
+    a.strictEqual(obj.bar.qux[2],'baz');
+  }
+
 }
 
 console.log('--- Test Start ---')
@@ -126,6 +143,6 @@ a.deepEqual(
 )
 
 runSetterGetterTests(expr)
-runSetterGetterTests(compiler)
+runSetterGetterTests(compiler,true)
 
 console.log('--- Tests Passed ---')
