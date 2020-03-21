@@ -12,7 +12,7 @@ interface Expr {
   }
 
   split(path: string): string[]
-  setter(path: string): (data: any, value: any) => any
+  setter(path: string, options?: {create: boolean, array: boolean}): (data: any, value: any) => any
   getter(path: string): (data: any) => any
   join(segments: string[]): string
   forEach(
