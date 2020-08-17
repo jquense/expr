@@ -8,7 +8,7 @@ function makeSafe(path, param) {
     parts = split(path),
     isLast
 
-  forEach(parts, function(part, isBracket, isArray, idx, parts) {
+  forEach(parts, function (part, isBracket, isArray, idx, parts) {
     isLast = idx === parts.length - 1
 
     part = isBracket || isArray ? '[' + part + ']' : '.' + part
@@ -36,7 +36,15 @@ function expr(expression, safe, param) {
 
 module.exports = {
   expr,
-  setter: function(path) {
+  setter: function (path) {
+    if (
+      path.indexOf('__proto__') !== -1 ||
+      path.indexOf('constructor') !== -1 ||
+      path.indexOf('prototype') !== -1
+    ) {
+      return (obj) => obj
+    }
+
     return (
       setCache.get(path) ||
       setCache.set(
@@ -46,7 +54,7 @@ module.exports = {
     )
   },
 
-  getter: function(path, safe) {
+  getter: function (path, safe) {
     var key = path + '_' + safe
     return (
       getCache.get(key) ||
@@ -55,5 +63,5 @@ module.exports = {
         new Function('data', 'return ' + expr(path, safe, 'data'))
       )
     )
-  }
+  },
 }

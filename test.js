@@ -2,6 +2,8 @@ const a = require('assert')
 const expr = require('./index')
 const compiler = require('./compiler')
 
+const root = (typeof global == 'object' && global) || this
+
 function runSetterGetterTests({ setter, getter }) {
   let obj = {
     foo: {
@@ -9,8 +11,8 @@ function runSetterGetterTests({ setter, getter }) {
       fux: 5,
       '00N40000002S5U0': 1,
       N40000002S5U0: 2,
-      'FE43-D880-21AE': 3
-    }
+      'FE43-D880-21AE': 3,
+    },
   }
 
   // -- Getters --
@@ -47,7 +49,24 @@ function runSetterGetterTests({ setter, getter }) {
   a.strictEqual(obj.foo.bar[1], 'bot')
 
   setter('[\'foo\']["bar"][1]')(obj, 'baz')
+
   a.strictEqual(obj.foo.bar[1], 'baz')
+  //
+  ;['__proto__', 'constructor', 'prototype'].forEach((keyToTest) => {
+    setter(`${keyToTest}.a`)({}, 'newValue')
+
+    a.notEqual(root['a'], 'newValue')
+
+    const b = 'oldValue'
+
+    a.equal(b, 'oldValue')
+    a.notEqual(root['b'], 'newValue')
+
+    setter(`${keyToTest}.b`)({}, 'newValue')
+    a.equal(b, 'oldValue')
+    a.notEqual(root['b'], 'newValue')
+    a.equal(root['b'], undefined)
+  })
 }
 
 console.log('--- Test Start ---')
@@ -89,7 +108,7 @@ a.strictEqual(expr.join(parts), 'foo.baz["bar"][1]')
 
 let count = 0
 
-expr.forEach('foo.baz["bar"][1]', function(part, isBracket, isArray, idx) {
+expr.forEach('foo.baz["bar"][1]', function (part, isBracket, isArray, idx) {
   count = idx
 
   switch (idx) {
