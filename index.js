@@ -52,7 +52,7 @@ module.exports = {
         var data = obj
 
         while (index < len - 1) {
-          let part = parts[index]
+          var part = parts[index]
           if (
             part === '__proto__' ||
             part === 'constructor' ||
