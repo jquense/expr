@@ -113,7 +113,7 @@ function normalizePath(path) {
 }
 
 function split(path) {
-  return path.match(SPLIT_REGEX)
+  return path.match(SPLIT_REGEX) || ['']
 }
 
 function forEach(parts, iter, thisArg) {
