@@ -24,6 +24,25 @@ setBaz(obj, 'set me!')
 console.log(obj.foo.bar[1].buz.baz) // => 'set me!'
 ```
 
+### Path syntax
+
+Paths use JavaScript-style property access, relative to the object passed to the
+getter or setter. Do not include the object's variable name in the path.
+
+- Dot notation selects a property: `foo.bar`.
+- Brackets select an array index: `foo.bar[1]` (indexes start at zero).
+- Brackets with single or double quotes select a property by name:
+  `foo['bar']` or `foo["bar"]`. This also works for names containing spaces or
+  hyphens, such as `foo["display-name"]`.
+- These forms can be combined: `foo.bar[1]['buz'].baz`.
+- A path can start with brackets when the root object is an array: `[0].name`.
+
+The main entry point treats each segment as a literal property name; it does not
+evaluate computed expressions or expand wildcards. For example, `items[index]`
+selects the property named `index`, rather than reading a JavaScript variable.
+Dots and square brackets are path delimiters even inside quoted segments, so
+property names containing those characters cannot be escaped with this syntax.
+
 ### `getter(expression, [ safeAccess ])`
 
 Returns a function that accepts an obj and returns the value at the supplied expression. You can create a "safe" getter, which won't error out when accessing properties that don't exist, reducing existance checks befroe property access:
